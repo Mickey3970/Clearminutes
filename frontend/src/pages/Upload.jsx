@@ -9,6 +9,7 @@ export default function Upload() {
   const [file, setFile] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0); // ✅ added
   const inputRef = useRef();
   const navigate = useNavigate();
 
@@ -38,12 +39,16 @@ export default function Upload() {
   const handleSubmit = async () => {
     if (!file) return;
     setLoading(true);
+    setProgress(0); // ✅ reset progress
     try {
-      const res = await uploadAudio(file);
+      const res = await uploadAudio(file, (percent) => {
+        setProgress(percent); // ✅ update progress bar live
+      });
       navigate(`/processing/${res.data.job_id}`);
     } catch (e) {
       setError(e.response?.data?.detail || "Upload failed. Is the backend running?");
       setLoading(false);
+      setProgress(0); // ✅ reset on error
     }
   };
 
@@ -58,11 +63,12 @@ export default function Upload() {
 
       {/* Drop Zone */}
       <div
-        onClick={() => inputRef.current.click()}
+        onClick={() => !loading && inputRef.current.click()} // ✅ disable click while uploading
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
-        className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-colors
+        className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors
+          ${loading ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
           ${dragging ? "border-blue-500 bg-blue-50" : "border-blue-200 hover:border-blue-400 hover:bg-white/60 bg-white/40"}`}
       >
         <div className="text-5xl mb-4">🎙️</div>
@@ -92,6 +98,22 @@ export default function Upload() {
         />
       </div>
 
+      {/* ✅ Progress Bar */}
+      {loading && (
+        <div className="mt-4">
+          <div className="flex justify-between text-sm text-gray-500 mb-1">
+            <span>Uploading...</span>
+            <span>{progress}%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div
+              className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {error && (
         <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
           {error}
@@ -104,7 +126,7 @@ export default function Upload() {
         className="mt-6 w-full py-3 px-6 bg-indigo-600 text-white font-semibold rounded-xl
           hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
       >
-        {loading ? "Uploading..." : "Generate Meeting Minutes"}
+        {loading ? `Uploading... ${progress}%` : "Generate Meeting Minutes"}
       </button>
 
       <p className="text-center text-xs text-gray-400 mt-4">
