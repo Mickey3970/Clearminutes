@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:8000",
+  baseURL: "https://clearminutes-api.onrender.com",  // ← your Render URL
 });
 
 export const uploadAudio = (file) => {
@@ -13,7 +13,7 @@ export const uploadAudio = (file) => {
 export const getJob = (jobId) => api.get(`/api/jobs/${jobId}`);
 
 export const exportJob = (jobId) => {
-  window.open(`http://localhost:8000/api/jobs/${jobId}/export`, "_blank");
+  window.open(`https://clearminutes-api.onrender.com/api/jobs/${jobId}/export`, "_blank");
 };
 
 export default api;
