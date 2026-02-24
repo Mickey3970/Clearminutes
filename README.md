@@ -1,6 +1,9 @@
 # ClearMinutes 🎙️
 
 > Transform meeting recordings into structured, actionable minutes using AI — in seconds.
+
+<img width="1919" height="938" alt="image" src="https://github.com/user-attachments/assets/7264492f-bcea-4604-b90c-bb7c47f29551" />
+
 ---
 
 ## What is ClearMinutes?
