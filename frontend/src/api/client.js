@@ -12,6 +12,8 @@ export const uploadAudio = (file) => {
 
 export const getJob = (jobId) => api.get(`/api/jobs/${jobId}`);
 
+export const getDashboard = () => api.get("/api/dashboard");
+
 export const exportJob = (jobId) => {
   window.open(`http://localhost:8000/api/jobs/${jobId}/export`, "_blank");
 };

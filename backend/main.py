@@ -190,6 +190,65 @@ def delete_job(job_id: str, db: Session = Depends(get_db)):
     db.commit()
     return {"deleted": True}
 
+@app.get("/api/dashboard")
+def get_dashboard(db: Session = Depends(get_db)):
+    jobs = db.query(models.Job).all()
+
+    total = len(jobs)
+    completed = [j for j in jobs if j.status == "completed"]
+    failed = [j for j in jobs if j.status == "failed"]
+    processing = [j for j in jobs if j.status in ("pending", "processing")]
+
+    total_action_items = 0
+    total_decisions = 0
+    total_key_points = 0
+    assignee_counts = {}
+    recent_meetings = []
+
+    for job in completed:
+        result = db.query(models.Result).filter(models.Result.job_id == job.id).first()
+        if not result:
+            continue
+
+        action_items = json.loads(result.action_items)
+        decisions = json.loads(result.decisions)
+        key_points = json.loads(result.key_points)
+
+        total_action_items += len(action_items)
+        total_decisions += len(decisions)
+        total_key_points += len(key_points)
+
+        for item in action_items:
+            assignee = item.get("assignee") or "Unassigned"
+            assignee_counts[assignee] = assignee_counts.get(assignee, 0) + 1
+
+        recent_meetings.append({
+            "job_id": job.id,
+            "filename": job.filename,
+            "created_at": job.created_at,
+            "action_items": len(action_items),
+            "decisions": len(decisions),
+            "overview": result.overview[:120] + "..." if len(result.overview) > 120 else result.overview,
+        })
+
+    recent_meetings.sort(key=lambda x: x["created_at"], reverse=True)
+
+    return {
+        "stats": {
+            "total_meetings": total,
+            "completed": len(completed),
+            "failed": len(failed),
+            "processing": len(processing),
+            "total_action_items": total_action_items,
+            "total_decisions": total_decisions,
+            "total_key_points": total_key_points,
+        },
+        "assignees": [
+            {"name": k, "tasks": v}
+            for k, v in sorted(assignee_counts.items(), key=lambda x: -x[1])
+        ],
+        "recent_meetings": recent_meetings[:10],
+    }
 
 @app.get("/api/health")
 def health():
