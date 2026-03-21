@@ -25,6 +25,8 @@ export const uploadAudio = (file, onUploadProgress) => {
 
 export const getJob = (jobId) => api.get(`/api/jobs/${jobId}`);
 
+export const getDashboard = () => api.get("/api/dashboard");
+
 export const exportJob = (jobId) => {
   window.open(
     `https://clearminutes.onrender.com/api/jobs/${jobId}/export`,
