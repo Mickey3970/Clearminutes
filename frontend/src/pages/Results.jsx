@@ -131,36 +131,33 @@ export default function Results() {
       </Section>
 
       {/* Decisions */}
-      <Section title="Decisions Made">
-        {result.decisions.length ? (
+      {result.decisions && result.decisions.length > 0 && (
+        <Section title="Decisions Made">
           <ul className="space-y-2">
             {result.decisions.map((d, i) => (
               <li key={i} className="flex gap-2 text-gray-700 text-sm">
-                <span className="text-green-500 mt-0.5">✓</span>
-                <span>{d}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-gray-400 text-sm">None recorded</p>
-        )}
-      </Section>
-
+          <span className="text-green-500 mt-0.5">✓</span>
+          <span>{d}</span>
+        </li>
+      ))}
+        </ul>
+        </Section>
+      )}
+     =
       {/* Open Questions */}
-      <Section title="Open Questions">
-        {result.open_questions.length ? (
-          <ul className="space-y-2">
-            {result.open_questions.map((q, i) => (
-              <li key={i} className="flex gap-2 text-gray-700 text-sm">
-                <span className="text-yellow-500 mt-0.5">?</span>
-                <span>{q}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-gray-400 text-sm">None recorded</p>
-        )}
-      </Section>
+        {result.open_questions && result.open_questions.length > 0 && (
+  <Section title="Open Questions">
+    <ul className="space-y-2">
+      {result.open_questions.map((q, i) => (
+        <li key={i} className="flex gap-2 text-gray-700 text-sm">
+          <span className="text-yellow-500 mt-0.5">?</span>
+          <span>{q}</span>
+        </li>
+      ))}
+    </ul>
+  </Section>
+)}
+      
 
       {/* Action Items */}
       <Section title="Action Items">

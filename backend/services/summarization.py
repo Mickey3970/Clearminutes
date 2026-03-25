@@ -15,7 +15,7 @@ Be concise and precise. Never invent information not present in the transcript.
 Return ONLY a valid JSON object with exactly this structure, no extra text, no markdown:
 
 {
-  "overview": "<2-4 sentence summary of the meeting purpose and outcome>",
+  "overview": "<<2-4 sentence summary of the meeting purpose and outcome. After summarizing, append ONE of these signals if detected: '⚠️ Unclear ownership detected on some action items.' or '⚠️ Several decisions lack a confirmed deadline.' or '⚠️ One or more topics were left unresolved.' or '✓ All action items have clear owners and deadlines.' Only append the most relevant one. If none apply, omit it.>",
   "key_points": ["<point 1>", "<point 2>"],
   "decisions": ["<decision 1>"],
   "open_questions": ["<question 1>"]

@@ -16,147 +16,110 @@ export default function Dashboard() {
   }, []);
 
   if (loading) return (
-    <div className="flex items-center justify-center min-h-screen">
-      <p className="text-gray-400 text-lg animate-pulse">Loading dashboard...</p>
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <p className="text-gray-400 animate-pulse">Loading your meetings...</p>
     </div>
   );
 
   if (error) return (
-    <div className="flex items-center justify-center min-h-screen">
-      <p className="text-red-500">{error}</p>
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <p className="text-red-400">{error}</p>
     </div>
   );
 
-  const { stats, assignees, recent_meetings } = data;
-
-  const statCards = [
-    { label: "Total Meetings", value: stats.total_meetings, color: "text-indigo-600", bg: "bg-indigo-50" },
-    { label: "Completed", value: stats.completed, color: "text-green-600", bg: "bg-green-50" },
-    { label: "Action Items", value: stats.total_action_items, color: "text-orange-600", bg: "bg-orange-50" },
-    { label: "Decisions Made", value: stats.total_decisions, color: "text-purple-600", bg: "bg-purple-50" },
-  ];
+  const { stats, recent_meetings } = data;
+  const pendingTasks = stats.total_action_items;
 
   return (
-    <div className="max-w-5xl mx-auto mt-10 px-4 pb-20">
+    <div className="max-w-3xl mx-auto mt-10 px-4 pb-20">
+
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
-          <p className="text-gray-400 mt-1 text-sm">Overview of all your meeting activity</p>
-        </div>
-        <button
-          onClick={() => navigate("/")}
-          className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
-        >
-          + New Meeting
-        </button>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-800">My Meetings</h1>
+        <p className="text-gray-400 mt-1 text-sm">
+          {stats.completed} meeting{stats.completed !== 1 ? "s" : ""} processed
+        </p>
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {statCards.map((s) => (
-          <div key={s.label} className={`${s.bg} rounded-xl p-5`}>
-            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">{s.label}</p>
-            <p className={`text-4xl font-bold mt-1 ${s.color}`}>{s.value}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-6 mb-8">
-        {/* Assignee Breakdown */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-            Action Items by Person
-          </h2>
-          {assignees.length === 0 ? (
-            <p className="text-gray-400 text-sm">No assignees yet.</p>
-          ) : (
-            <div className="space-y-3">
-              {assignees.map((a) => {
-                const max = assignees[0].tasks;
-                const pct = Math.round((a.tasks / max) * 100);
-                return (
-                  <div key={a.name}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-gray-700 font-medium">{a.name}</span>
-                      <span className="text-gray-400">{a.tasks} task{a.tasks !== 1 ? "s" : ""}</span>
-                    </div>
-                    <div className="w-full bg-gray-100 rounded-full h-2">
-                      <div
-                        className="bg-indigo-500 h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Meeting Status Breakdown */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-            Meeting Status
-          </h2>
-          <div className="space-y-4">
-            {[
-              { label: "Completed", value: stats.completed, color: "bg-green-400" },
-              { label: "Processing", value: stats.processing, color: "bg-yellow-400" },
-              { label: "Failed", value: stats.failed, color: "bg-red-400" },
-            ].map((s) => (
-              <div key={s.label}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-700">{s.label}</span>
-                  <span className="text-gray-400">{s.value}</span>
-                </div>
-                <div className="w-full bg-gray-100 rounded-full h-2">
-                  <div
-                    className={`${s.color} h-2 rounded-full transition-all duration-500`}
-                    style={{ width: stats.total_meetings ? `${(s.value / stats.total_meetings) * 100}%` : "0%" }}
-                  />
-                </div>
-              </div>
-            ))}
+      {/* Pending Tasks Banner — only show if there are tasks */}
+      {pendingTasks > 0 && (
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between">
+          <div>
+            <p className="text-amber-800 font-semibold text-sm">
+              🔔 You have {pendingTasks} pending task{pendingTasks !== 1 ? "s" : ""} across your meetings
+            </p>
+            <p className="text-amber-600 text-xs mt-0.5">
+              Review your recent meetings to stay on track
+            </p>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Recent Meetings Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-            Recent Meetings
-          </h2>
-        </div>
+      {/* Recent Meetings */}
+      <div className="space-y-3">
         {recent_meetings.length === 0 ? (
-          <p className="text-gray-400 text-sm p-6">No completed meetings yet.</p>
+          <div className="text-center py-20">
+            <p className="text-5xl mb-4">🎙️</p>
+            <p className="text-gray-500 font-medium">No meetings yet</p>
+            <p className="text-gray-400 text-sm mt-1">
+              Upload your first recording to get started
+            </p>
+            <button
+              onClick={() => navigate("/")}
+              className="mt-6 px-6 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+            >
+              + New Meeting
+            </button>
+          </div>
         ) : (
-          <div className="divide-y divide-gray-50">
-            {recent_meetings.map((m) => (
-              <div
-                key={m.job_id}
-                onClick={() => navigate(`/results/${m.job_id}`)}
-                className="px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 truncate">{m.filename}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{new Date(m.created_at).toLocaleString()}</p>
-                    <p className="text-xs text-gray-500 mt-1 line-clamp-1">{m.overview}</p>
-                  </div>
-                  <div className="flex gap-3 ml-4 text-xs shrink-0">
-                    <span className="bg-orange-50 text-orange-600 px-2 py-1 rounded-full font-medium">
-                      {m.action_items} tasks
+          recent_meetings.map((m) => (
+            <div
+              key={m.job_id}
+              onClick={() => navigate(`/results/${m.job_id}`)}
+              className="bg-white rounded-xl px-6 py-4 shadow-sm border border-gray-100 hover:border-indigo-200 hover:shadow-md cursor-pointer transition-all"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-800 truncate">
+                    {m.filename}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {new Date(m.created_at).toLocaleDateString("en-US", {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                  {m.overview && (
+                    <p className="text-xs text-gray-500 mt-2 line-clamp-2">
+                      {m.overview}
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5 items-end shrink-0">
+                  {m.action_items > 0 && (
+                    <span className="bg-orange-50 text-orange-600 text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap">
+                      {m.action_items} task{m.action_items !== 1 ? "s" : ""}
                     </span>
-                    <span className="bg-purple-50 text-purple-600 px-2 py-1 rounded-full font-medium">
-                      {m.decisions} decisions
+                  )}
+                  {m.decisions > 0 && (
+                    <span className="bg-purple-50 text-purple-600 text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap">
+                      {m.decisions} decision{m.decisions !== 1 ? "s" : ""}
                     </span>
-                  </div>
+                  )}
                 </div>
               </div>
-            ))}
-          </div>
+
+              {/* Resume work CTA */}
+              <div className="mt-3 pt-3 border-t border-gray-50 flex items-center justify-between">
+                <span className="text-xs text-indigo-500 font-medium">
+                  View minutes →
+                </span>
+              </div>
+            </div>
+          ))
         )}
       </div>
     </div>

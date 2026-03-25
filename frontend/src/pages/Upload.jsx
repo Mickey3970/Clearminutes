@@ -55,9 +55,9 @@ export default function Upload() {
   return (
     <div className="max-w-2xl mx-auto mt-16 px-4">
       <div className="text-center mb-10">
-        <h1 className="text-4xl font-bold text-gray-800">AI Meeting Minutes</h1>
+        <h1 className="text-4xl font-bold text-gray-800">Never rewatch a meeting again.</h1>
         <p className="text-gray-500 mt-2">
-          Upload a meeting recording and get structured minutes in seconds.
+          Upload your recording. Know exactly what was decided, who owns what, and what's at risk — in 30 seconds.
         </p>
       </div>
 
@@ -130,7 +130,7 @@ export default function Upload() {
       </button>
 
       <p className="text-center text-xs text-gray-400 mt-4">
-        Powered by Groq Whisper + LLaMA 3.3
+        Powered by Groq Whisper + LLaMA 3.3 · Private & Secure · No account needed
       </p>
     </div>
   );
