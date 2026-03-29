@@ -28,4 +28,5 @@ class Result(Base):
     decisions: Mapped[str] = Column(Text, nullable=False)
     open_questions: Mapped[str] = Column(Text, nullable=False)
     action_items: Mapped[str] = Column(Text, nullable=False)
+    risks: Mapped[str] = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

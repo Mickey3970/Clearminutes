@@ -28,7 +28,13 @@ function Badge({ level }) {
 
 export default function Results() {
   const { jobId } = useParams();
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState({
+  action_items: [],
+  key_points: [],
+  decisions: [],
+  open_questions: [],
+  risks: [],
+});
   const [filename, setFilename] = useState("");
   const [showTranscript, setShowTranscript] = useState(false);
   const [showLowConf, setShowLowConf] = useState(false);
@@ -36,12 +42,18 @@ export default function Results() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getJob(jobId).then((res) => {
+  getJob(jobId)
+    .then((res) => {
+      console.log("API RESPONSE:", res.data);
       setResult(res.data.result);
       setFilename(res.data.filename);
       setLoading(false);
+    })
+    .catch((err) => {
+      console.error("API ERROR:", err);
+      setLoading(false);
     });
-  }, [jobId]);
+}, [jobId]);
 
   const copyToClipboard = () => {
     const r = result;
@@ -80,6 +92,10 @@ export default function Results() {
       </div>
     );
   }
+
+  if (!result) {
+  return <div className="text-center mt-10">No data available</div>;
+}
 
   const visibleActions = result.action_items.filter(
     (a) => showLowConf || a.confidence !== "low"
@@ -143,7 +159,7 @@ export default function Results() {
         </ul>
         </Section>
       )}
-     =
+     
       {/* Open Questions */}
         {result.open_questions && result.open_questions.length > 0 && (
   <Section title="Open Questions">
@@ -212,6 +228,45 @@ export default function Results() {
           </p>
         )}
       </div>
+
+      {/* Risks & Gaps */}
+{result.risks && result.risks.length > 0 && (
+  <Section title="⚠️ Risks & Gaps Detected">
+    <div className="space-y-3">
+      {result.risks.map((risk, i) => {
+        const severityStyles = {
+          high: "bg-red-50 border-red-200 text-red-700",
+          medium: "bg-amber-50 border-amber-200 text-amber-700",
+          low: "bg-gray-50 border-gray-200 text-gray-600",
+        };
+        const typeLabels = {
+          missing_owner: "Missing Owner",
+          no_deadline: "No Deadline",
+          unresolved_topic: "Unresolved Topic",
+          conflicting_statements: "Conflicting Statements",
+          no_followup: "No Follow-up",
+        };
+        return (
+          <div
+            key={i}
+            className={`border rounded-lg p-3 ${severityStyles[risk.severity] || severityStyles.low}`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-semibold uppercase tracking-wide">
+                {typeLabels[risk.type] || risk.type}
+              </span>
+              <span className="text-xs font-medium opacity-70">
+                {risk.severity} severity
+              </span>
+            </div>
+            <p className="text-sm font-medium">{risk.title}</p>
+            <p className="text-xs mt-0.5 opacity-80">{risk.description}</p>
+          </div>
+        );
+      })}
+    </div>
+  </Section>
+)}
 
       <div className="mt-6 text-center">
         <a href="/" className="text-indigo-600 text-sm hover:underline">

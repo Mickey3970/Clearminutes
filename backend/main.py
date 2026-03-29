@@ -7,7 +7,7 @@ import json
 from database import engine, get_db, Base
 import models
 from services.transcription import validate_audio_file, transcribe_audio
-from services.summarization import summarize_transcript, extract_action_items
+from services.summarization import summarize_transcript, extract_action_items, detect_risks
 from services.storage import save_upload, delete_file
 
 # Create tables
@@ -44,6 +44,10 @@ def process_meeting(job_id: str, file_path: str):
         # Stage 3: Extract action items
         action_items = extract_action_items(transcript)
 
+        # Stage 4: Detect risks
+        risks = detect_risks(transcript)
+        
+
         # Save result
         result = models.Result(
             job_id=job_id,
@@ -53,6 +57,7 @@ def process_meeting(job_id: str, file_path: str):
             decisions=json.dumps(summary.get("decisions", [])),
             open_questions=json.dumps(summary.get("open_questions", [])),
             action_items=json.dumps(action_items),
+            risks=json.dumps(risks),
         )
         db.add(result)
 
@@ -130,6 +135,7 @@ def get_job(job_id: str, db: Session = Depends(get_db)):
                 "decisions": json.loads(result.decisions),
                 "open_questions": json.loads(result.open_questions),
                 "action_items": json.loads(result.action_items),
+                "risks": json.loads(result.risks or '[]'),
             }
 
     return response

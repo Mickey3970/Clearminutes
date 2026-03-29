@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://clearminutes.onrender.com",
+  baseURL: import.meta.env.production.VITE_API_URL,
   timeout: 120000, // 2 minutes — important for Render's free tier
 });
 
@@ -15,7 +15,7 @@ export const uploadAudio = (file, onUploadProgress) => {
     onUploadProgress: (progressEvent) => {
       if (progressEvent.total) {
         const percent = Math.round(
-          (progressEvent.loaded * 100) / progressEvent.total
+          (progressEvent.loaded * 100) / progressEvent.total,
         );
         if (onUploadProgress) onUploadProgress(percent);
       }
@@ -29,8 +29,8 @@ export const getDashboard = () => api.get("/api/dashboard");
 
 export const exportJob = (jobId) => {
   window.open(
-    `https://clearminutes.onrender.com/api/jobs/${jobId}/export`,
-    "_blank"
+    `${import.meta.env.production.VITE_API_URL}/api/jobs/${jobId}/export`,
+    "_blank",
   );
 };
 
