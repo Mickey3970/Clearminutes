@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.production.VITE_API_URL,
+  baseURL: import.meta.env.VITE_API_URL,
   timeout: 120000, // 2 minutes — important for Render's free tier
 });
 
@@ -29,7 +29,7 @@ export const getDashboard = () => api.get("/api/dashboard");
 
 export const exportJob = (jobId) => {
   window.open(
-    `${import.meta.env.production.VITE_API_URL}/api/jobs/${jobId}/export`,
+    `${import.meta.env.VITE_API_URL}/api/jobs/${jobId}/export`,
     "_blank",
   );
 };

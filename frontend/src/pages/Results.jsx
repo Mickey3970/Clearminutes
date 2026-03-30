@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { getJob, exportJob } from "../api/client";
 
 function Section({ title, children }) {
@@ -13,7 +13,7 @@ function Section({ title, children }) {
   );
 }
 
-function Badge({ level }) {
+function ConfidenceBadge({ level }) {
   const colors = {
     high: "bg-green-100 text-green-700",
     medium: "bg-yellow-100 text-yellow-700",
@@ -26,34 +26,135 @@ function Badge({ level }) {
   );
 }
 
+// ── Action Item Card with trust layer + checkbox + badges ──────────────────
+function ActionItem({ item, index, checked, onToggle }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div
+      className={`rounded-lg border transition-all duration-200 ${
+        checked
+          ? "bg-gray-50 border-gray-200 opacity-60"
+          : "bg-white border-blue-100 shadow-sm"
+      }`}
+    >
+      <div className="flex items-start gap-3 p-3">
+        {/* ── Checkbox ── */}
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={() => onToggle(index)}
+          className="mt-1 accent-indigo-600 cursor-pointer"
+        />
+
+        <div className="flex-1 min-w-0">
+          {/* ── Task text ── */}
+          <p className={`text-sm font-medium ${checked ? "line-through text-gray-400" : "text-gray-800"}`}>
+            {item.task}
+          </p>
+
+          {/* ── Badges row ── */}
+          <div className="flex flex-wrap gap-2 mt-2">
+            {item.assignee ? (
+              <span className="inline-flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-medium">
+                👤 {item.assignee}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-xs bg-red-50 text-red-500 px-2 py-0.5 rounded-full font-medium">
+                ⚠️ No owner
+              </span>
+            )}
+
+            {item.deadline ? (
+              <span className="inline-flex items-center gap-1 text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+                📅 {item.deadline}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-xs bg-orange-50 text-orange-500 px-2 py-0.5 rounded-full font-medium">
+                ⚠️ No deadline
+              </span>
+            )}
+
+            <ConfidenceBadge level={item.confidence} />
+
+            {/* ── Trust layer toggle ── */}
+            {item.evidence && (
+              <button
+                onClick={() => setExpanded(!expanded)}
+                className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 px-2 py-0.5 rounded-full font-medium transition-colors"
+              >
+                {expanded ? "▲ Hide source" : "▼ View source"}
+              </button>
+            )}
+          </div>
+
+          {/* ── Evidence snippet (trust layer) ── */}
+          {expanded && item.evidence && (
+            <div className="mt-2 p-2 bg-indigo-50 border border-indigo-100 rounded-lg">
+              <p className="text-xs text-indigo-600 font-medium mb-0.5">
+                From transcript:
+              </p>
+              <p className="text-xs text-indigo-800 italic">
+                "{item.evidence}"
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Results() {
   const { jobId } = useParams();
+  const navigate = useNavigate();
+
   const [result, setResult] = useState({
-  action_items: [],
-  key_points: [],
-  decisions: [],
-  open_questions: [],
-  risks: [],
-});
+    action_items: [],
+    key_points: [],
+    decisions: [],
+    open_questions: [],
+    risks: [],
+  });
   const [filename, setFilename] = useState("");
   const [showTranscript, setShowTranscript] = useState(false);
   const [showLowConf, setShowLowConf] = useState(false);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // ── DB-ready checkbox state ──
+  // Structure mirrors future DB shape: { index: { checked: bool, completedAt: iso_string | null } }
+  // To persist to DB later:
+  //   - Init: replace {} with await getTaskStatuses(jobId)
+  //   - Toggle: add await updateTaskStatus(jobId, index, updated[index]) after setCheckedItems
+  const [checkedItems, setCheckedItems] = useState({});
+
   useEffect(() => {
-  getJob(jobId)
-    .then((res) => {
-      console.log("API RESPONSE:", res.data);
-      setResult(res.data.result);
-      setFilename(res.data.filename);
-      setLoading(false);
-    })
-    .catch((err) => {
-      console.error("API ERROR:", err);
-      setLoading(false);
+    getJob(jobId)
+      .then((res) => {
+        setResult(res.data.result);
+        setFilename(res.data.filename);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("API ERROR:", err);
+        setLoading(false);
+      });
+  }, [jobId]);
+
+  const toggleItem = (index) => {
+    setCheckedItems((prev) => {
+      const isChecked = !prev[index]?.checked;
+      return {
+        ...prev,
+        [index]: {
+          checked: isChecked,
+          completedAt: isChecked ? new Date().toISOString() : null,
+          // Later: await updateTaskStatus(jobId, index, { checked: isChecked })
+        },
+      };
     });
-}, [jobId]);
+  };
 
   const copyToClipboard = () => {
     const r = result;
@@ -76,7 +177,9 @@ export default function Results() {
       ...(r.action_items.length
         ? r.action_items.map(
             (a) =>
-              `• ${a.task}${a.assignee ? ` (${a.assignee})` : ""}${a.deadline ? ` — ${a.deadline}` : ""}`
+              `• ${a.task}${a.assignee ? ` (${a.assignee})` : " (No owner)"}${
+                a.deadline ? ` — ${a.deadline}` : " — No deadline"
+              }`
           )
         : ["None recorded"]),
     ].join("\n");
@@ -94,15 +197,19 @@ export default function Results() {
   }
 
   if (!result) {
-  return <div className="text-center mt-10">No data available</div>;
-}
+    return <div className="text-center mt-10 text-gray-400">No data available</div>;
+  }
 
   const visibleActions = result.action_items.filter(
     (a) => showLowConf || a.confidence !== "low"
   );
 
+  const completedCount = Object.values(checkedItems).filter((v) => v.checked).length;
+  const totalVisible = visibleActions.length;
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
+
       {/* Header */}
       <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
         <div>
@@ -152,51 +259,43 @@ export default function Results() {
           <ul className="space-y-2">
             {result.decisions.map((d, i) => (
               <li key={i} className="flex gap-2 text-gray-700 text-sm">
-          <span className="text-green-500 mt-0.5">✓</span>
-          <span>{d}</span>
-        </li>
-      ))}
-        </ul>
+                <span className="text-green-500 mt-0.5">✓</span>
+                <span>{d}</span>
+              </li>
+            ))}
+          </ul>
         </Section>
       )}
-     
+
       {/* Open Questions */}
-        {result.open_questions && result.open_questions.length > 0 && (
-  <Section title="Open Questions">
-    <ul className="space-y-2">
-      {result.open_questions.map((q, i) => (
-        <li key={i} className="flex gap-2 text-gray-700 text-sm">
-          <span className="text-yellow-500 mt-0.5">?</span>
-          <span>{q}</span>
-        </li>
-      ))}
-    </ul>
-  </Section>
-)}
-      
+      {result.open_questions && result.open_questions.length > 0 && (
+        <Section title="Open Questions">
+          <ul className="space-y-2">
+            {result.open_questions.map((q, i) => (
+              <li key={i} className="flex gap-2 text-gray-700 text-sm">
+                <span className="text-yellow-500 mt-0.5">?</span>
+                <span>{q}</span>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
 
       {/* Action Items */}
-      <Section title="Action Items">
+      <Section title={`Action Items${totalVisible > 0 ? ` — ${completedCount}/${totalVisible} done` : ""}`}>
         {result.action_items.length === 0 ? (
           <p className="text-gray-400 text-sm">No action items found</p>
         ) : (
           <>
             <div className="space-y-3">
               {visibleActions.map((item, i) => (
-                <div key={i} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                  <input type="checkbox" className="mt-1 accent-indigo-600" readOnly />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-gray-800 text-sm font-medium">{item.task}</p>
-                    <div className="flex flex-wrap gap-2 mt-1 text-xs text-gray-500">
-                      {item.assignee && <span>👤 {item.assignee}</span>}
-                      {item.deadline && <span>📅 {item.deadline}</span>}
-                      {item.evidence && (
-                        <span className="italic text-gray-400">"{item.evidence}"</span>
-                      )}
-                    </div>
-                  </div>
-                  <Badge level={item.confidence} />
-                </div>
+                <ActionItem
+                  key={i}
+                  item={item}
+                  index={i}
+                  checked={checkedItems[i]?.checked || false}
+                  onToggle={toggleItem}
+                />
               ))}
             </div>
             {result.action_items.some((a) => a.confidence === "low") && (
@@ -211,8 +310,47 @@ export default function Results() {
         )}
       </Section>
 
+      {/* Risks & Gaps */}
+      {result.risks && result.risks.length > 0 && (
+        <Section title="⚠️ Risks & Gaps Detected">
+          <div className="space-y-3">
+            {result.risks.map((risk, i) => {
+              const severityStyles = {
+                high: "bg-red-50 border-red-200 text-red-700",
+                medium: "bg-amber-50 border-amber-200 text-amber-700",
+                low: "bg-gray-50 border-gray-200 text-gray-600",
+              };
+              const typeLabels = {
+                missing_owner: "Missing Owner",
+                no_deadline: "No Deadline",
+                unresolved_topic: "Unresolved Topic",
+                conflicting_statements: "Conflicting Statements",
+                no_followup: "No Follow-up",
+              };
+              return (
+                <div
+                  key={i}
+                  className={`border rounded-lg p-3 ${severityStyles[risk.severity] || severityStyles.low}`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-semibold uppercase tracking-wide">
+                      {typeLabels[risk.type] || risk.type}
+                    </span>
+                    <span className="text-xs font-medium opacity-70">
+                      {risk.severity} severity
+                    </span>
+                  </div>
+                  <p className="text-sm font-medium">{risk.title}</p>
+                  <p className="text-xs mt-0.5 opacity-80">{risk.description}</p>
+                </div>
+              );
+            })}
+          </div>
+        </Section>
+      )}
+
       {/* Transcript */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-blue-100 p-6 shadow-sm">
+      <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-blue-100 p-6 shadow-sm mb-4">
         <button
           onClick={() => setShowTranscript(!showTranscript)}
           className="flex items-center justify-between w-full"
@@ -228,45 +366,6 @@ export default function Results() {
           </p>
         )}
       </div>
-
-      {/* Risks & Gaps */}
-{result.risks && result.risks.length > 0 && (
-  <Section title="⚠️ Risks & Gaps Detected">
-    <div className="space-y-3">
-      {result.risks.map((risk, i) => {
-        const severityStyles = {
-          high: "bg-red-50 border-red-200 text-red-700",
-          medium: "bg-amber-50 border-amber-200 text-amber-700",
-          low: "bg-gray-50 border-gray-200 text-gray-600",
-        };
-        const typeLabels = {
-          missing_owner: "Missing Owner",
-          no_deadline: "No Deadline",
-          unresolved_topic: "Unresolved Topic",
-          conflicting_statements: "Conflicting Statements",
-          no_followup: "No Follow-up",
-        };
-        return (
-          <div
-            key={i}
-            className={`border rounded-lg p-3 ${severityStyles[risk.severity] || severityStyles.low}`}
-          >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-semibold uppercase tracking-wide">
-                {typeLabels[risk.type] || risk.type}
-              </span>
-              <span className="text-xs font-medium opacity-70">
-                {risk.severity} severity
-              </span>
-            </div>
-            <p className="text-sm font-medium">{risk.title}</p>
-            <p className="text-xs mt-0.5 opacity-80">{risk.description}</p>
-          </div>
-        );
-      })}
-    </div>
-  </Section>
-)}
 
       <div className="mt-6 text-center">
         <a href="/" className="text-indigo-600 text-sm hover:underline">
