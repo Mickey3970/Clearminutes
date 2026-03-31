@@ -1,16 +1,47 @@
-import { useState } from "react";
+import {useEffect } from "react";
 import { BrowserRouter, Routes, Route, Link, Navigate } from "react-router-dom";
+import {
+  SignedIn,
+  SignedOut,
+  UserButton,
+  SignInButton,
+  useAuth,
+} from "@clerk/clerk-react";
+import { setAuthToken } from "./api/client";
 import Upload from "./pages/Upload";
 import Processing from "./pages/Processing";
 import Results from "./pages/Results";
 import Dashboard from "./pages/Dashboard";
 
-export default function App() {
-  const [menuOpen, setMenuOpen] = useState(false);
+function AuthTokenSetter() {
+  const { getToken, isSignedIn, isLoaded } = useAuth();
 
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!isSignedIn) {
+      setAuthToken(null);
+      return;
+    }
+
+    const attach = async () => {
+      const token = await getToken();
+      console.log("DEBUG: Token attached, length=", token?.length);
+      if (token) setAuthToken(token);
+    };
+
+    attach();
+    const interval = setInterval(attach, 50000);
+    return () => clearInterval(interval);
+  }, [isLoaded, isSignedIn, getToken]);
+
+  return null;
+}
+
+export default function App() {
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-100">
+        <AuthTokenSetter />
 
         {/* Navbar */}
         <nav className="bg-white/70 backdrop-blur-sm border-b border-blue-100 px-6 py-4 sticky top-0 z-50">
@@ -19,59 +50,65 @@ export default function App() {
               ClearMinutes
             </Link>
 
-            {/* Desktop nav */}
+            {/* Desktop */}
             <div className="hidden sm:flex items-center gap-6">
-              <Link
-                to="/dashboard"
-                className="text-sm text-gray-500 hover:text-indigo-600 transition-colors"
-              >
-                My Meetings
-              </Link>
-              <Link
-                to="/"
-                className="text-sm bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
-              >
-                + New Meeting
-              </Link>
+              <SignedIn>
+                <Link to="/dashboard" className="text-sm text-gray-500 hover:text-indigo-600 transition-colors">
+                  My Meetings
+                </Link>
+                <Link to="/" className="text-sm bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+                  + New Meeting
+                </Link>
+                <UserButton afterSignOutUrl="/" />
+              </SignedIn>
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <button className="text-sm bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+                    Sign In
+                  </button>
+                </SignInButton>
+              </SignedOut>
             </div>
 
-            {/* Mobile hamburger */}
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="sm:hidden flex flex-col gap-1.5 p-1"
-            >
-              <span className={`block w-6 h-0.5 bg-gray-600 transition-all ${menuOpen ? "rotate-45 translate-y-2" : ""}`} />
-              <span className={`block w-6 h-0.5 bg-gray-600 transition-all ${menuOpen ? "opacity-0" : ""}`} />
-              <span className={`block w-6 h-0.5 bg-gray-600 transition-all ${menuOpen ? "-rotate-45 -translate-y-2" : ""}`} />
-            </button>
+            {/* Mobile */}
+            <div className="sm:hidden flex items-center gap-3">
+              <SignedIn>
+                <Link to="/dashboard" className="text-sm text-gray-500 hover:text-indigo-600 transition-colors">
+                  My Meetings
+                </Link>
+                <UserButton afterSignOutUrl="/" />
+              </SignedIn>
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <button className="text-sm bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+                    Sign In
+                  </button>
+                </SignInButton>
+              </SignedOut>
+            </div>
           </div>
-
-          {/* Mobile dropdown */}
-          {menuOpen && (
-            <div className="sm:hidden mt-3 pb-2 border-t border-blue-100 pt-3 flex flex-col gap-3 px-1">
-              <Link
-                to="/dashboard"
-                onClick={() => setMenuOpen(false)}
-                className="text-sm text-gray-600 hover:text-indigo-600 transition-colors"
-              >
-                My Meetings
-              </Link>
-              <Link
-                to="/"
-                onClick={() => setMenuOpen(false)}
-                className="text-sm bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-center"
-              >
-                + New Meeting
-              </Link>
-            </div>
-          )}
         </nav>
 
         <Routes>
+          {/* Upload is public — demo works without auth */}
           <Route path="/" element={<Upload />} />
-          <Route path="/processing/:jobId" element={<Processing />} />
+
+          {/* Results public for demo job, protected for real jobs */}
           <Route path="/results/:jobId" element={<Results />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+
+          {/* Protected routes */}
+          <Route path="/processing/:jobId" element={
+            <>
+              <SignedIn><Processing /></SignedIn>
+              <SignedOut><Navigate to="/" /></SignedOut>
+            </>
+          } />
+          <Route path="/dashboard" element={
+            <>
+              <SignedIn><Dashboard /></SignedIn>
+              <SignedOut><Navigate to="/" /></SignedOut>
+            </>
+          } />
         </Routes>
       </div>
     </BrowserRouter>

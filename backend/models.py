@@ -9,6 +9,7 @@ class Job(Base):
     __tablename__ = "jobs"
 
     id: Mapped[str] = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[str | None] = Column(String, nullable=True)
     status: Mapped[str] = Column(String, default="pending")
     filename: Mapped[str] = Column(String, nullable=False)
     file_path: Mapped[str] = Column(String, nullable=False)
@@ -30,3 +31,11 @@ class Result(Base):
     action_items: Mapped[str] = Column(Text, nullable=False)
     risks: Mapped[str] = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class TaskStatus(Base):
+    __tablename__ = "task_statuses"
+    id: Mapped[str] = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    job_id: Mapped[str] = Column(String, nullable=False)
+    task_index: Mapped[int] = Column(String, nullable=False)
+    checked: Mapped[bool] = Column(String, default=False)
+    completed_at = Column(DateTime(timezone=True), nullable=True)

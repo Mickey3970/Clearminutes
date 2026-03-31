@@ -6,3 +6,6 @@ sqlalchemy
 groq
 anthropic
 python-dotenv
+psycopg2-binary
+python-jose[cryptography]
+httpx

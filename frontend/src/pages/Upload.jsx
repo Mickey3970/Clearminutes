@@ -97,7 +97,16 @@ export default function Upload() {
           onChange={(e) => e.target.files[0] && handleFile(e.target.files[0])}
         />
       </div>
-
+      {/* Demo banner */}
+        <div className="mt-4 flex items-center justify-center gap-2">
+          <span className="text-xs text-gray-400">No audio file?</span>
+          <button
+            onClick={() => navigate("/results/demo-meeting-clearminutes")}
+            className="text-xs text-indigo-500 hover:text-indigo-700 underline transition-colors"
+          >
+            Try a sample meeting →
+          </button>
+        </div>  
       {/* ✅ Progress Bar */}
       {loading && (
         <div className="mt-4">

@@ -1,19 +1,28 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getDashboard } from "../api/client";
+import { useAuth } from "@clerk/clerk-react";
 
 export default function Dashboard() {
+  const { isSignedIn, isLoaded } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
-    getDashboard()
-      .then((res) => setData(res.data))
-      .catch(() => setError("Failed to load dashboard."))
-      .finally(() => setLoading(false));
-  }, []);
+  if(!isLoaded || !isSignedIn) return;
+  getDashboard()
+    .then((res) => setData(res.data))
+    .catch((err) => {
+      if (err.response?.status === 401) {
+        setError("Sign in to view your meetings.");
+      } else {
+        setError("Failed to load dashboard.");
+      }
+    })
+    .finally(() => setLoading(false));
+}, [isLoaded, isSignedIn]);
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
@@ -28,7 +37,8 @@ export default function Dashboard() {
   );
 
   const { stats, recent_meetings } = data;
-  const pendingTasks = stats.total_action_items;
+  const pendingTasks = stats.pending_tasks || 0;
+  
 
   return (
     <div className="max-w-3xl mx-auto mt-10 px-4 pb-20">
@@ -99,17 +109,22 @@ export default function Dashboard() {
                   )}
                 </div>
                 <div className="flex flex-col gap-1.5 items-end shrink-0">
-                  {m.action_items > 0 && (
-                    <span className="bg-orange-50 text-orange-600 text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap">
-                      {m.action_items} task{m.action_items !== 1 ? "s" : ""}
-                    </span>
-                  )}
-                  {m.decisions > 0 && (
-                    <span className="bg-purple-50 text-purple-600 text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap">
-                      {m.decisions} decision{m.decisions !== 1 ? "s" : ""}
-                    </span>
-                  )}
-                </div>
+  {m.pending_tasks > 0 && (
+    <span className="bg-amber-50 text-amber-600 text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap">
+      {m.pending_tasks} pending
+    </span>
+  )}
+  {m.action_items > 0 && (
+    <span className="bg-orange-50 text-orange-600 text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap">
+      {m.action_items} task{m.action_items !== 1 ? "s" : ""}
+    </span>
+  )}
+  {m.decisions > 0 && (
+    <span className="bg-purple-50 text-purple-600 text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap">
+      {m.decisions} decision{m.decisions !== 1 ? "s" : ""}
+    </span>
+  )}
+</div>
               </div>
 
               {/* Resume work CTA */}

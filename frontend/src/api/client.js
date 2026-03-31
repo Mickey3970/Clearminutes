@@ -5,6 +5,19 @@ const api = axios.create({
   timeout: 120000, // 2 minutes — important for Render's free tier
 });
 
+export const getTaskStatuses = (jobId) => api.get(`/api/jobs/${jobId}/tasks`);
+
+export const setAuthToken = (token) => {
+  if (token) {
+    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  } else {
+    delete api.defaults.headers.common["Authorization"];
+  }
+};
+
+export const updateTaskStatus = (jobId, index, data) =>
+  api.patch(`/api/jobs/${jobId}/tasks/${index}`, data);
+
 export const uploadAudio = (file, onUploadProgress) => {
   const formData = new FormData();
   formData.append("file", file);

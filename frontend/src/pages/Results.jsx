@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getJob, exportJob } from "../api/client";
+import { getJob, exportJob, getTaskStatuses, updateTaskStatus } from "../api/client";
 
 function Section({ title, children }) {
   return (
@@ -130,31 +130,40 @@ export default function Results() {
   const [checkedItems, setCheckedItems] = useState({});
 
   useEffect(() => {
-    getJob(jobId)
-      .then((res) => {
-        setResult(res.data.result);
-        setFilename(res.data.filename);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("API ERROR:", err);
-        setLoading(false);
-      });
-  }, [jobId]);
-
-  const toggleItem = (index) => {
-    setCheckedItems((prev) => {
-      const isChecked = !prev[index]?.checked;
-      return {
-        ...prev,
-        [index]: {
-          checked: isChecked,
-          completedAt: isChecked ? new Date().toISOString() : null,
-          // Later: await updateTaskStatus(jobId, index, { checked: isChecked })
-        },
-      };
+  getJob(jobId)
+    .then((res) => {
+      setResult(res.data.result);
+      setFilename(res.data.filename);
+      setLoading(false);
+    })
+    .catch((err) => {
+      console.error("API ERROR:", err);
+      setLoading(false);
     });
+
+  // ✅ Load persisted task statuses from DB
+  getTaskStatuses(jobId)
+    .then((res) => setCheckedItems(res.data))
+    .catch(() => {}); // silently fail for demo job or unauthenticated users
+}, [jobId]);
+
+  const toggleItem = async (index) => {
+  const isChecked = !checkedItems[index]?.checked;
+  const updated = {
+    checked: isChecked,
+    completedAt: isChecked ? new Date().toISOString() : null,
   };
+
+  // Optimistic update — UI updates instantly without waiting for DB
+  setCheckedItems((prev) => ({ ...prev, [index]: updated }));
+
+  // Persist to DB
+  try {
+    await updateTaskStatus(jobId, index, updated);
+  } catch {
+    // silently fail for demo job or unauthenticated users
+  }
+};
 
   const copyToClipboard = () => {
     const r = result;
