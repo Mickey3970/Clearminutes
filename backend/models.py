@@ -32,10 +32,11 @@ class Result(Base):
     risks: Mapped[str] = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
- class TaskStatus(Base):
+
+class TaskStatus(Base):
     __tablename__ = "task_statuses"
     id: Mapped[str] = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     job_id: Mapped[str] = Column(String, nullable=False)
-    task_index = Column(String, nullable=False)
-    checked = Column(Boolean, default=False)        # ✅ Boolean not String
+    task_index = Column(String, nullable=False)       # ✅ removed Mapped[int] — stored as string
+    checked = Column(Boolean, default=False)           # ✅ Boolean not String
     completed_at = Column(DateTime(timezone=True), nullable=True)
